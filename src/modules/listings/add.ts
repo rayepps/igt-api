@@ -13,6 +13,7 @@ import { permissions } from '../../core/auth'
 import mappers from '../../core/view/mappers'
 import { TokenAuth } from '@exobase/auth'
 import fmt from '../../core/fmt'
+import slugger from 'url-slug'
 
 interface Args {
   title: string
@@ -21,7 +22,6 @@ interface Args {
   price: number
   images: t.Asset[]
   videoUrl: string | null
-  location: t.GeoLocation
 }
 
 interface Services {
@@ -40,8 +40,11 @@ async function addListing({ args, auth, services }: Props<Args, Services, TokenA
   const [uerr, user] = await mongo.findUserById(userId as t.Id<'user'>)
   const [cerr, category] = await mongo.findCategory(args.categoryId)
 
+  const listingId = model.id('listing')
+
   const listing: t.Listing = {
-    id: model.id('listing'),
+    id: listingId,
+    slug: slugger(`${args.title}-${listingId.replace('igt.listing.', '').substring(0, 5)}`),
     title: args.title,
     status: 'available',
     categoryId: args.categoryId,
@@ -55,7 +58,7 @@ async function addListing({ args, auth, services }: Props<Args, Services, TokenA
           url: args.videoUrl
         }
       : null,
-    location: args.location,
+    location: user.location,
     userId,
     user: {
       id: user.id,
@@ -83,21 +86,14 @@ export default _.compose(
   }),
   useJsonArgs<Args>(yup => ({
     title: yup.string().required(),
-    categoryId: yup.string().required(), // TODO: Require igt.category.{id} format
+    categoryId: yup.string().matches(/^igt\.category\.[a-z0-9]+$/).required(),
     description: yup.string().required(),
-    price: yup.number().integer().positive().required(),
+    price: yup.number().integer().positive().nullable(),
     images: yup.array().of(yup.object({
       id: yup.string().required(),
       url: yup.string().url().required()
-    })),
-    videoUrl: yup.string().url().required(),
-    location: yup.object({
-      longitude: yup.number().required(),
-      latitude: yup.number().required(),
-      zip: yup.number().integer().positive().required(),
-      city: yup.string().required(),
-      state: yup.string().required()
-    })
+    })).required(),
+    videoUrl: yup.string().url().nullable()
   })),
   useService<Services>({
     mongo: makeMongo()

@@ -43,7 +43,7 @@ export const findItem =
       return db.collection<TDocument>(collection).findOne(query) as Promise<TDocument>
     })()
     if (err) return [err, null]
-    return [null, toModel(record, args)]
+    return [null, !!record ? toModel(record, args) : null]
   }
 
 export const findManyItems =

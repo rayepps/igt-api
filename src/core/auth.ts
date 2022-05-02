@@ -1,5 +1,8 @@
 import * as t from './types'
-import { createPermission, Permission } from '@exobase/auth'
+import { createPermission, createToken, Permission } from '@exobase/auth'
+import config from './config'
+import dur from 'durhuman'
+import bcrypt from 'bcryptjs'
 
 const make = (model: t.Model, action: 'read' | 'create' | 'update' | 'delete', scope?: '*' | t.Id<any>) => {
   return createPermission(model, action, scope)
@@ -72,7 +75,8 @@ export const permissionsForUser = (user: t.User): Permission[] => {
     case 'user':
       return [
         permissions.user.read.self(user.id),
-        permissions.user.update.self(user.id)
+        permissions.user.update.self(user.id),
+        permissions.listing.create,
       ]
     case 'admin-observer':
       return [
@@ -86,3 +90,37 @@ export const permissionsForUser = (user: t.User): Permission[] => {
       ]
   }
 }
+
+const SALT_ROUNDS = 10
+export const generatePasswordHash = async (password: string): Promise<[Error, string]> => {
+  return new Promise(resolve => {
+    bcrypt.hash(password, SALT_ROUNDS, (err, hash) => {
+      if (err) resolve([err, null])
+      else resolve([null, hash])
+    })
+  })
+}
+
+export async function comparePasswordToHash(providedPassword: string, savedHash: string): Promise<[Error, boolean]> {
+  return new Promise(resolve => {
+    bcrypt.compare(providedPassword, savedHash, (err, isMatch) => {
+      if (err) resolve([err, false])
+      else resolve([null, isMatch])
+    })
+  })
+}
+
+export const generateToken = (user: t.User) => createToken({
+  sub: user.id,
+  type: 'id',
+  aud: 'igt.app',
+  iss: 'igt.api',
+  entity: 'user',
+  ttl: dur('7 days'),
+  permissions: permissionsForUser(user),
+  provider: 'igt',
+  extra: {
+    email: user.email
+  },
+  secret: config.tokenSignatureSecret
+})

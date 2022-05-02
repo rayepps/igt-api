@@ -34,10 +34,6 @@ export default _.compose(
   useLogger(),
   useLambda(),
   useCors(),
-  useTokenAuthentication(),
-  usePermissionAuthorization({
-    require: [permissions.sponsor.read]
-  }),
   useService<Services>({
     mongo: makeMongo()
   }),

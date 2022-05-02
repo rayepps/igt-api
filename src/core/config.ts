@@ -1,4 +1,3 @@
-
 const get = <T = string>(name: string, defaultValue: T = null, cast: (v: any) => T = v => v): T => {
   const val = process.env[name]
   if (!val) return defaultValue
@@ -14,7 +13,10 @@ const config = {
   redisUsername: get('REDIS_USERNAME'),
   redisPassword: get('REDIS_PASSWORD'),
   redisUrl: get('REDIS_URL'),
-  mongoUri: get('MONGO_URI')
+  mongoUri: get('MONGO_URI'),
+  imageKitPublicKey: get('IMAGE_KIT_PUBLIC_KEY'),
+  imageKitPrivateKey: get('IMAGE_KIT_PRIVATE_KEY'),
+  imageKitUrlEndpoint: get('IMAGE_KIT_URL_ENDPOINT')
 }
 
 export type Config = typeof config

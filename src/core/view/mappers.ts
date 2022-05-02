@@ -11,6 +11,7 @@ export class UserView {
       email: model.email,
       phone: model.phone,
       role: model.role,
+      lastLoggedInAt: model.lastLoggedInAt,
       createdAt: model.createdAt
     }
   }
@@ -21,6 +22,7 @@ export class CategoryView {
     return {
       _view: 'igt.category',
       id: model.id,
+      slug: model.slug,
       label: model.label
     }
   }

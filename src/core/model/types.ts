@@ -16,6 +16,9 @@ export type Id <M extends Model> = `igt.${M}.${string}`
 export type UserRole = 'user' | 'admin' | 'admin-observer'
 export type ListingOrder = `${'price' | 'updated-at'}:${'asc' | 'desc'}`
 export type UserOrder = `${'logged-in' | 'created-at'}:${'asc' | 'desc'}`
+export type SponsorTier = 'trial' | 'free' | 'partner' | 'featured'
+export type SponsorStatus = 'active' | 'disabled'
+export type ListingStatus = 'available' | 'sold'
 
 export interface User {
   id: Id<'user'>
@@ -33,6 +36,7 @@ export interface User {
   lastLoggedInAt: number
   createdAt: number
   updatedAt: number
+  _aspRecordId: number | null
 }
 
 export interface GeoPoint {
@@ -51,6 +55,8 @@ export interface GeoLocation {
 export interface Category {
   id: Id<'category'>
   label: string
+  slug: string
+  _aspRecordId: number | null
 }
 
 export interface Asset {
@@ -58,23 +64,22 @@ export interface Asset {
   url: string
 }
 
-export type ListingStatus = 'available' | 'sold'
-
 export interface Listing {
   id: Id<'listing'>
   title: string
+  slug: string
   status: ListingStatus
   categoryId: Id<'category'>
   category: Category
   description: string
-  price: number
+  price: number | null
   displayPrice: string
   images: Asset[]
   video: Omit<Asset, 'id'> | null
   location: GeoLocation
   userId: Id<'user'>
   user: Pick<User, 'id' | 'email' | 'fullName'>
-  _aspRecordId: string | null
+  _aspRecordId: number | null
   addedAt: number
   updatedAt: number
 }
@@ -87,8 +92,6 @@ export interface PageViewEvent {
   userId: Id<'user'>
   categoryId: Id<'category'>
 }
-
-export type SponsorTier = 'trial' | 'free' | 'partner' | 'featured'
 
 export interface SponsorEngagedEvent {
   id: Id<'view'>
@@ -111,8 +114,6 @@ export interface SponsorCampaign {
   createdAt: number
   updatedAt: number
 }
-
-export type SponsorStatus = 'active' | 'disabled'
 
 export interface Sponsor {
   id: Id<'sponsor'>

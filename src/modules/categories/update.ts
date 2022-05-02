@@ -1,6 +1,6 @@
 import _ from 'radash'
 import * as t from '../../core/types'
-import type { Props } from '@exobase/core'
+import { errors, Props } from '@exobase/core'
 import { useLogger } from '../../core/hooks/useLogger'
 import { useJsonArgs, useService } from '@exobase/hooks'
 import { useCors } from '../../core/hooks/useCors'
@@ -13,6 +13,7 @@ import { permissions } from '../../core/auth'
 interface Args {
   id: t.Id<'category'>
   label: string
+  slug: string
 }
 
 interface Services {
@@ -23,9 +24,20 @@ type Response = void
 
 async function updateCategory({ args, services }: Props<Args, Services>): Promise<Response> {
   const { mongo } = services
+
+  const [eerr, existing] = await mongo.findCategoryBySlug(args.slug)
+  if (eerr) throw eerr
+  if (existing) {
+    throw errors.badRequest({
+      details: `A category with the provided slug (${args.slug}) already exists. Slugs must be unique`,
+      key: 'igt.err.categories.update.slug-exists'
+    })
+  }
+
   const [err] = await mongo.updateCategory({ 
     id: args.id, 
-    label: args.label 
+    label: args.label,
+    slug: args.slug
   })
   if (err) throw err
 }
@@ -40,7 +52,8 @@ export default _.compose(
   }),
   useJsonArgs<Args>(yup => ({
     id: yup.string().required(), // TODO: Match pattern igt.category.{id}
-    label: yup.string().required()
+    label: yup.string().required(),
+    slug: yup.string().matches(/^[a-z0-9\-]*$/).required()
   })),
   useService<Services>({
     mongo: makeMongo()

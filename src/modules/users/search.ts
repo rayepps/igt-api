@@ -9,6 +9,7 @@ import makeMongo, { MongoClient } from '../../core/mongo'
 import { useTokenAuthentication } from '../../core/hooks/useTokenAuthentication'
 import { usePermissionAuthorization } from '@exobase/auth/dist/permission'
 import { permissions } from '../../core/auth'
+import mappers from '../../core/view/mappers'
 
 interface Args {
   pageSize?: number
@@ -23,20 +24,22 @@ interface Services {
 }
 
 type Response = Args & {
-  users: t.User[]
+  users: t.UserView[]
 }
 
 async function searchUsers({ args, services }: Props<Args, Services>): Promise<Response> {
   const { mongo } = services
   const [err, users] = await mongo.searchUsers({
-    page: args.page ?? 1,
+    page: args.page ? args.page - 1 : 0,
     pageSize: args.pageSize ?? 25,
     order: args.order ?? 'created-at:asc',
     disabled: args.disabled,
     name: args.name
   })
+  if (err) throw err
   return {
-    users, ...args
+    users: users.map(mappers.UserView.toView), 
+    ...args
   }
 }
 
@@ -49,8 +52,8 @@ export default _.compose(
     require: [permissions.user.read.any]
   }),
   useJsonArgs<Args>(yup => ({
-    pageSize: yup.number().integer().positive(),
-    page: yup.number().integer().positive(),
+    pageSize: yup.number().integer().min(1).max(100),
+    page: yup.number().integer().min(1),
     order: yup.string(), // TODO: Require specific values
     name: yup.string(),
     disabled: yup.boolean()

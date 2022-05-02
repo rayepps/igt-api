@@ -14,7 +14,6 @@ import mappers from '../../core/view/mappers'
 
 interface Args {
   name: string
-  tier: t.SponsorTier
 }
 
 interface Services {
@@ -31,7 +30,7 @@ async function addSponsor({ args, services }: Props<Args, Services>): Promise<Re
     id: model.id('sponsor'),
     name: args.name,
     status: 'disabled',
-    tier: args.tier,
+    tier: 'trial',
     categories: [],
     campaigns: [],
     createdAt: Date.now(),
@@ -52,11 +51,7 @@ export default _.compose(
     require: [permissions.sponsor.create]
   }),
   useJsonArgs<Args>(yup => ({
-    name: yup.string().required(),
-    tier: yup
-      .string()
-      .oneOf(['featured', 'free', 'partner', 'trial'] as t.SponsorTier[])
-      .required()
+    name: yup.string().required()
   })),
   useService<Services>({
     mongo: makeMongo()

@@ -1,5 +1,4 @@
 import _ from 'radash'
-import bcrypt from 'bcryptjs'
 import dur from 'durhuman'
 import * as t from '../../core/types'
 import mappers from '../../core/view/mappers'
@@ -10,7 +9,7 @@ import { createToken } from '@exobase/auth'
 import { useLambda } from '@exobase/lambda'
 import { useLogger } from '../../core/hooks/useLogger'
 import config from '../../core/config'
-import { permissionsForUser } from '../../core/auth'
+import { generatePasswordHash, generateToken, permissionsForUser } from '../../core/auth'
 import { useCors } from '../../core/hooks/useCors'
 import model from '../../core/model'
 import makeGeo, { GeoClient } from '../../core/geo'
@@ -19,7 +18,8 @@ interface Args {
   email: string
   password: string
   fullName: string
-  zip: number
+  zip?: string
+  cityState?: string
 }
 
 interface Services {
@@ -51,7 +51,7 @@ async function signupWithEmailPass({ services, args }: Props<Args, Services>): P
     })
   }
 
-  const [hashError, hash] = await generateHash(args.password)
+  const [hashError, hash] = await generatePasswordHash(args.password)
   if (hashError) {
     console.error(hashError)
     throw errors.badRequest({
@@ -60,7 +60,16 @@ async function signupWithEmailPass({ services, args }: Props<Args, Services>): P
     })
   }
 
-  const location = await geo.lookupZip(args.zip)
+  const [geoerr, location] = args.cityState ? await geo.lookupCityState(args.cityState) : await geo.lookupZip(args.zip)
+  if (geoerr) {
+    console.error(geoerr)
+    throw errors.badRequest({
+      details: `Could not find location using ${args.cityState ? args.cityState : args.zip}`,
+      key: 'igt.err.auth.signup.no-location'
+    })
+  }
+
+  console.log({ location, address: args.cityState })
 
   const user: t.User = {
     id: model.id('user'),
@@ -74,7 +83,8 @@ async function signupWithEmailPass({ services, args }: Props<Args, Services>): P
     _passwordReset: null,
     lastLoggedInAt: Date.now(),
     createdAt: Date.now(),
-    updatedAt: Date.now()
+    updatedAt: Date.now(),
+    _aspRecordId: null
   }
 
   const [err] = await mongo.addUser(user)
@@ -87,32 +97,9 @@ async function signupWithEmailPass({ services, args }: Props<Args, Services>): P
   }
 
   return {
-    idToken: createToken({
-      sub: user.id,
-      type: 'id',
-      aud: 'px.app',
-      iss: 'px.api',
-      entity: 'user',
-      ttl: dur('7 days'),
-      permissions: permissionsForUser(user),
-      provider: 'px',
-      extra: {
-        email: user.email
-      },
-      secret: config.tokenSignatureSecret
-    }),
+    idToken: generateToken(user),
     user: mappers.UserView.toView(user)
   }
-}
-
-const SALT_ROUNDS = 10
-const generateHash = async (password: string): Promise<[Error, string]> => {
-  return new Promise(resolve => {
-    bcrypt.hash(password, SALT_ROUNDS, (err, hash) => {
-      if (err) resolve([err, null])
-      else resolve([null, hash])
-    })
-  })
 }
 
 export default _.compose(
@@ -120,10 +107,22 @@ export default _.compose(
   useLambda(),
   useCors(),
   useJsonArgs<Args>(yup => ({
-    email: yup.string().email().required(),
-    password: yup.string().required(),
-    fullName: yup.string().required(),
-    zip: yup.number().required()
+    fullName: yup.string().required('Full name is required'),
+    email: yup.string().email('Invalid email format').required('Email is required'),
+    password: yup
+      .string()
+      .required()
+      .matches(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/,
+        'Must Contain 8 Characters, One Uppercase, One Lowercase, One Number and One Special Case Character'
+      ),
+    zip: yup.string().when('cityState', {
+      is: (cs: any) => !cs,
+      then: schema => schema.required('Must provide zip or city, state').matches(/^\d{5}$/, 'Invalid zipcode format'),
+      otherwise: schema => schema
+    }),
+    cityState: yup.string(),
+    terms: yup.boolean().oneOf([true], 'Must accept terms to create an account').required()
   })),
   useService<Services>({
     mongo: makeMongo(),

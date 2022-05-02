@@ -15,7 +15,7 @@ interface Args {
   page?: number
   order?: t.ListingOrder
   keywords?: string
-  categoryId: t.Id<'category'>
+  categoryId?: t.Id<'category'>
   near?: { 
     zip: number
     proximity: number 
@@ -34,21 +34,25 @@ type Response = Args & {
 
 async function searchListings({ args, services }: Props<Args, Services>): Promise<Response> {
   const { mongo, geo } = services
-  const location = args.near
+  const [lerr, location] = args.near
     ? await geo.lookupZip(args.near.zip)
-    : null
+    : [null, null]
+  if (lerr) {
+    throw lerr
+  }
   const [err, listings] = await mongo.searchListings({
     near: args.near && {
       ...location,
       proximity: args.near.proximity
     },
-    page: args.page ?? 1,
+    page: args.page ? args.page - 1 : 0,
     pageSize: args.pageSize ?? 25,
     categoryId: args.categoryId,
     order: args.order ?? 'updated-at:asc'
   })
   return {
-    listings, ...args
+    ...args,
+    listings
   }
 }
 
@@ -57,8 +61,8 @@ export default _.compose(
   useLambda(),
   useCors(),
   useJsonArgs<Args>(yup => ({
-    pageSize: yup.number().integer().positive(),
-    page: yup.number().integer().positive(),
+    pageSize: yup.number().integer().min(1).max(100),
+    page: yup.number().integer().min(1),
     order: yup.string(), // TODO: Require specific values
     keywords: yup.string(),
     categoryId: yup.string(),

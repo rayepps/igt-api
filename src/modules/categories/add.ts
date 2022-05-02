@@ -1,6 +1,6 @@
 import _ from 'radash'
 import * as t from '../../core/types'
-import type { Props } from '@exobase/core'
+import { errors, Props } from '@exobase/core'
 import { useLogger } from '../../core/hooks/useLogger'
 import { useJsonArgs, useService } from '@exobase/hooks'
 import { useCors } from '../../core/hooks/useCors'
@@ -14,6 +14,7 @@ import mappers from '../../core/view/mappers'
 
 interface Args {
   label: string
+  slug: string
 }
 
 interface Services {
@@ -26,9 +27,19 @@ interface Response {
 
 async function addCategory({ args, services }: Props<Args, Services>): Promise<Response> {
   const { mongo } = services
+  const [err, existing] = await mongo.findCategoryBySlug(args.slug)
+  if (err) throw err
+  if (existing) {
+    throw errors.badRequest({
+      details: `A category with the provided slug (${args.slug}) already exists. Slugs must be unique`,
+      key: 'igt.err.categories.add.slug-exists'
+    })
+  }
   const category: t.Category = {
     id: model.id('category'),
-    label: args.label
+    slug: args.slug,
+    label: args.label,
+    _aspRecordId: null
   }
   await mongo.addCategory(category)
   return {
@@ -45,7 +56,8 @@ export default _.compose(
     require: [permissions.category.create]
   }),
   useJsonArgs<Args>(yup => ({
-    label: yup.string().required()
+    label: yup.string().required(),
+    slug: yup.string().matches(/^[a-z0-9\-]*$/).required()
   })),
   useService<Services>({
     mongo: makeMongo()

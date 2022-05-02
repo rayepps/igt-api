@@ -12,10 +12,10 @@ import { permissions } from '../../core/auth'
 
 interface Args {
   id: t.Id<'sponsor'>
-  name?: string
-  status?: t.SponsorStatus
-  tier?: t.SponsorTier
-  categoryIds?: t.Id<'category'>[]
+  name: string
+  status: t.SponsorStatus
+  tier: t.SponsorTier
+  categoryIds: t.Id<'category'>[]
 }
 
 interface Services {
@@ -55,11 +55,11 @@ export default _.compose(
     require: [permissions.sponsor.update]
   }),
   useJsonArgs<Args>(yup => ({
-    id: yup.string().required(), // TODO: Match pattern igt.sponsor.{id}
-    name: yup.string(),
-    status: yup.string().oneOf(['active', 'disabled'] as t.SponsorStatus[]),
-    tier: yup.string().oneOf(['featured', 'free', 'partner', 'trial'] as t.SponsorTier[]),
-    categoryIds: yup.array().of(yup.string())
+    id: yup.string().matches(/^igt\.sponsor\.[a-z0-9]+$/).required(),
+    name: yup.string().required(),
+    status: yup.string().oneOf(['active', 'disabled'] as t.SponsorStatus[]).required(),
+    tier: yup.string().oneOf(['featured', 'free', 'partner', 'trial'] as t.SponsorTier[]).required(),
+    categoryIds: yup.array().of(yup.string().matches(/^igt\.category\.[a-z0-9]+$/)).required()
   })),
   useService<Services>({
     mongo: makeMongo()

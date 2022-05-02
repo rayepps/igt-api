@@ -4,7 +4,10 @@
   "license": "UNLICENSED",
   "scripts": {
     "dev": "source ./env.sh && PORT=7709 ts-node --transpile-only ./src/dev.ts",
-    "build": "ts-node build.ts"
+    "build": "ts-node build.ts",
+    "import:listings": "source ./env.sh && ts-node --transpile-only ./src/importing/listings.ts",
+    "import:categories": "source ./env.sh && ts-node --transpile-only ./src/importing/categories.ts",
+    "import:users": "source ./env.sh && ts-node --transpile-only ./src/importing/users.ts"
   },
   "dependencies": {
     "@exobase/auth": "^0.0.17",
@@ -22,6 +25,7 @@
     "googleapis": "^87.0.0",
     "graphql": "^15.6.0",
     "graphql-request": "^3.5.0",
+    "imagekit": "^3.2.5",
     "jsonwebtoken": "^8.5.1",
     "mongodb": "^4.4.1",
     "nanoid": "^3.1.29",
@@ -30,6 +34,7 @@
     "postmark": "^3.0.1",
     "radash": "^1.7.0",
     "redis": "^4.0.4",
+    "url-slug": "^3.0.3",
     "uuid": "^8.3.2",
     "yup": "^0.32.9"
   },
@@ -43,6 +48,7 @@
     "@types/natural": "^5.1.1",
     "@types/node": "^15.0.1",
     "@types/node-geocoder": "^3.24.4",
+    "@types/tedious": "^4.0.7",
     "@types/urijs": "^1.19.17",
     "@types/uuid": "^8.3.0",
     "chai": "^4.3.4",
@@ -50,6 +56,7 @@
     "fs-extra": "^10.0.0",
     "minimist": "^1.2.5",
     "nodemon": "^2.0.7",
+    "tedious": "^14.4.0",
     "terser-webpack-plugin": "^5.3.1",
     "ts-loader": "^9.2.8",
     "ts-node": "^9.1.1",

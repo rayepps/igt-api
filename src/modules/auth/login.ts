@@ -1,16 +1,13 @@
 import _ from 'radash'
 import bcrypt from 'bcryptjs'
-import dur from 'durhuman'
 import * as t from '../../core/types'
 import mappers from '../../core/view/mappers'
 import makeMongo, { MongoClient } from '../../core/mongo'
 import { useJsonArgs, useService } from '@exobase/hooks'
 import { errors, Props } from '@exobase/core'
-import { createToken } from '@exobase/auth'
 import { useLambda } from '@exobase/lambda'
 import { useLogger } from '../../core/hooks/useLogger'
-import config from '../../core/config'
-import { permissionsForUser } from '../../core/auth'
+import { comparePasswordToHash, generateToken } from '../../core/auth'
 import { useCors } from '../../core/hooks/useCors'
 
 interface Args {
@@ -56,7 +53,7 @@ async function loginWithEmailPass({ services, args }: Props<Args, Services>): Pr
     })
   }
 
-  const [hashError, isMatch] = await compareCreds(password, user._passwordHash)
+  const [hashError, isMatch] = await comparePasswordToHash(password, user._passwordHash)
 
   if (hashError || !isMatch) {
     if (hashError) console.error(hashError)
@@ -67,46 +64,10 @@ async function loginWithEmailPass({ services, args }: Props<Args, Services>): Pr
   }
 
   return {
-    idToken: createToken({
-      sub: user.id,
-      type: 'id',
-      aud: 'igt.app',
-      iss: 'igt.api',
-      entity: 'user',
-      ttl: dur('7 days'),
-      permissions: permissionsForUser(user),
-      provider: 'igt',
-      extra: {
-        email: user.email
-      },
-      secret: config.tokenSignatureSecret
-    }),
+    idToken: generateToken(user),
     user: mappers.UserView.toView(user)
   }
 }
-
-async function compareCreds(providedPassword: string, savedHash: string): Promise<[Error, boolean]> {
-  return new Promise(resolve => {
-    bcrypt.compare(providedPassword, savedHash, (err, isMatch) => {
-      if (err) resolve([err, false])
-      else resolve([null, isMatch])
-    })
-  })
-}
-
-// bcrypt.hash('Hashme12!', 10, console.log.bind(console))
-
-// const SALT_ROUNDS = 10
-// async function generateHash(password: string): Promise<[Error, string]> {
-//   return new Promise((resolve) => {
-//       bcrypt.hash(password, SALT_ROUNDS, (err, hash) => {
-//           if (err) resolve([err, null])
-//           else resolve([null, hash])
-//       })
-//   })
-// }
-
-      
 
 export default _.compose(
   useLogger(),

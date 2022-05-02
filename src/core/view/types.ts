@@ -8,11 +8,13 @@ export interface UserView {
   fullName: string
   phone: string
   role: t.UserRole
+  lastLoggedInAt: number
 }
 
 export type CategoryView = {
   _view: 'igt.category'
   id: string
+  slug: string
   label: string
 }
 
@@ -22,7 +24,7 @@ export type SponsorView = {
   name: string
   status: t.SponsorStatus
   tier: t.SponsorTier
-  categories: t.Category[]
+  categories: CategoryView[]
   campaigns: t.SponsorCampaign[]
   createdAt: number
   updatedAt: number

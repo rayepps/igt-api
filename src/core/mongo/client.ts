@@ -5,7 +5,7 @@ import * as mappers from './mappers'
 import { addItem, findAll, findItem, findManyItems, updateOne, deleteOne } from './methods'
 
 const mid = (fullId: t.Id<any>) => {
-  return new Mongo.ObjectId(fullId.replace(/px\.(.+?)\./, ''))
+  return new Mongo.ObjectId(fullId.replace(/igt\.(.+?)\./, ''))
 }
 
 const createMongoClient = (client: Mongo.MongoClient) => {
@@ -30,6 +30,14 @@ const createMongoClient = (client: Mongo.MongoClient) => {
       }),
       toModel: mappers.User.toModel
     }),
+    findUserByLegacyId: findItem({
+      db,
+      collection: 'users',
+      toQuery: (aspRecordId) => ({
+        _aspRecordId: aspRecordId
+      }),
+      toModel: mappers.User.toModel
+    }),
     addUser: addItem({
       db,
       collection: 'users',
@@ -50,7 +58,7 @@ const createMongoClient = (client: Mongo.MongoClient) => {
         order: t.UserOrder
         disabled?: boolean
         name?: string
-      }) => ({
+      }) => _.shake({
         disabled: !disabled ? undefined : disabled,
         fullName: !name
           ? undefined
@@ -85,11 +93,13 @@ const createMongoClient = (client: Mongo.MongoClient) => {
       }) => ({
         _id: mid(args.id)
       }),
-      toUpdate: args => args.patch
+      toUpdate: args => ({
+        $set: args.patch
+      })
     }),
 
     //
-    // CONTACTS
+    // CATEGORIES
     //
     addCategory: addItem({
       db,
@@ -107,11 +117,14 @@ const createMongoClient = (client: Mongo.MongoClient) => {
     updateCategory: updateOne({
       db,
       collection: 'categories',
-      toQuery: (args: { id: t.Id<'category'>; label: string }) => ({
+      toQuery: (args: { id: t.Id<'category'>; label: string; slug: string }) => ({
         _id: mid(args.id)
       }),
-      toUpdate: args => ({
-        label: args.label
+      toUpdate: (args) => ({
+        $set: {
+          label: args.label,
+          slug: args.slug
+        }
       })
     }),
     findCategory: findItem({
@@ -119,6 +132,14 @@ const createMongoClient = (client: Mongo.MongoClient) => {
       collection: 'categories',
       toQuery: (id: t.Id<'category'>) => ({
         _id: mid(id)
+      }),
+      toModel: mappers.Category.toModel
+    }),
+    findCategoryBySlug: findItem({
+      db,
+      collection: 'categories',
+      toQuery: (slug: string) => ({
+        slug
       }),
       toModel: mappers.Category.toModel
     }),
@@ -148,7 +169,9 @@ const createMongoClient = (client: Mongo.MongoClient) => {
       }) => ({
         _id: mid(args.id)
       }),
-      toUpdate: ({ patch }) => patch
+      toUpdate: ({ patch }) => ({
+        $set: patch
+      })
     }),
     findSponsor: findItem({
       db,
@@ -171,10 +194,10 @@ const createMongoClient = (client: Mongo.MongoClient) => {
         _categoryId: mid(listing.categoryId),
         _userId: mid(listing.userId),
         _text: `${listing.title} ${listing.description}`,
-        _location: {
+        _location: listing.location ? {
           type: 'Point',
-          coordinates: [listing.location.latitude, listing.location.longitude]
-        }
+          coordinates: [listing.location.longitude, listing.location.latitude]
+        } : null
       })
     }),
     findListingById: findItem({
@@ -182,6 +205,22 @@ const createMongoClient = (client: Mongo.MongoClient) => {
       collection: 'listings',
       toQuery: (id: t.Id<'listing'>) => ({
         _id: mid(id)
+      }),
+      toModel: mappers.Listing.toModel
+    }),
+    findListingByLegacyId: findItem({
+      db,
+      collection: 'listings',
+      toQuery: (aspRecordId: number) => ({
+        _aspRecordId: aspRecordId
+      }),
+      toModel: mappers.Listing.toModel
+    }),
+    findListingBySlug: findItem({
+      db,
+      collection: 'listings',
+      toQuery: (slug: string) => ({
+        slug
       }),
       toModel: mappers.Listing.toModel
     }),
@@ -208,7 +247,7 @@ const createMongoClient = (client: Mongo.MongoClient) => {
         categoryId?: t.Id<'category'>
         near?: t.GeoPoint & { proximity: number }
         keywords?: string
-      }) => ({
+      }) => _.shake({
         _location: !near
           ? undefined
           : {
@@ -232,9 +271,10 @@ const createMongoClient = (client: Mongo.MongoClient) => {
         skip: args.page > 0 ? args.page * args.pageSize : undefined,
         limit: args.pageSize,
         sort: (() => {
+          console.log('SORT: ', args.order)
           if (!args.order) return undefined
           const [field, dir] = args.order.split(':') as ['price' | 'updated-at', 'asc' | 'desc']
-          const dirNum = dir === 'asc' ? 1 : -1
+          const dirNum = dir === 'asc' ? -1 : 1
           if (field === 'price') {
             return { price: dirNum }
           }
