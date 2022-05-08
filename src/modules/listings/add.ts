@@ -14,6 +14,7 @@ import mappers from '../../core/view/mappers'
 import { TokenAuth } from '@exobase/auth'
 import fmt from '../../core/fmt'
 import slugger from 'url-slug'
+import addDays from 'date-fns/addDays'
 
 interface Args {
   title: string
@@ -67,7 +68,8 @@ async function addListing({ args, auth, services }: Props<Args, Services, TokenA
     },
     _aspRecordId: null,
     addedAt: Date.now(),
-    updatedAt: Date.now()
+    updatedAt: Date.now(),
+    expiresAt: addDays(new Date(), 45).getTime()
   }
   const [err] = await mongo.addListing(listing)
   if (err) throw err

@@ -72,15 +72,17 @@ export const findAll =
   <TModel, TArgs, TDocument>({
     db: dbPromise,
     collection,
+    query,
     toModel
   }: {
     db: Promise<Mongo.Db>
     collection: Collection
+    query?: Mongo.Filter<TDocument>
     toModel: (record: TDocument) => TModel
   }) =>
   async (): Promise<[Error, TModel[]]> => {
     const db = await dbPromise
-    const cursor = db.collection<TDocument>(collection).find()
+    const cursor = db.collection<TDocument>(collection).find(query)
     const [err2, records] = await _.try(() => cursor.toArray() as Promise<TDocument[]>)()
     if (err2) return [err2, null]
     return [null, records.map(toModel)]
@@ -108,19 +110,19 @@ export const updateOne =
   }
   
 export const deleteOne =
-  <TDocument extends t.MongoDocument, TQuery>({
+  <TDocument extends t.MongoDocument, TArgs>({
     db: dbPromise,
     collection,
     toQuery
   }: {
     db: Promise<Mongo.Db>
     collection: Collection
-    toQuery: (query: TQuery) => Mongo.Filter<TDocument>
+    toQuery: (args: TArgs) => Mongo.Filter<TDocument>
   }) =>
-  async (query: TQuery): Promise<[Error, void]> => {
+  async (args: TArgs): Promise<[Error, void]> => {
     const db = await dbPromise
     const [err] = await _.try(() => {
-      return db.collection<TDocument>(collection).deleteOne(query)
+      return db.collection<TDocument>(collection).deleteOne(toQuery(args))
     })()
     if (err) return [err, null]
     return [null, null]

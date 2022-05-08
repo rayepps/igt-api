@@ -9,6 +9,7 @@ import makeCache, { CacheClient } from '../../core/cache'
 import { useCachedResponse } from '../../core/hooks/useCachedResponse'
 import makeMongo, { MongoClient } from '../../core/mongo'
 import makeGeo, { GeoClient } from '../../core/geo'
+import mappers from '../../core/view/mappers'
 
 interface Args {
   pageSize?: number
@@ -16,6 +17,7 @@ interface Args {
   order?: t.ListingOrder
   keywords?: string
   categoryId?: t.Id<'category'>
+  posterId: t.Id<'user'>
   near?: { 
     zip: number
     proximity: number 
@@ -29,7 +31,7 @@ interface Services {
 }
 
 type Response = Args & {
-  listings: t.Listing[]
+  listings: t.ListingView[]
 }
 
 async function searchListings({ args, services }: Props<Args, Services>): Promise<Response> {
@@ -45,6 +47,7 @@ async function searchListings({ args, services }: Props<Args, Services>): Promis
       ...location,
       proximity: args.near.proximity
     },
+    posterId: args.posterId,
     page: args.page ? args.page - 1 : 0,
     pageSize: args.pageSize ?? 25,
     categoryId: args.categoryId,
@@ -52,7 +55,7 @@ async function searchListings({ args, services }: Props<Args, Services>): Promis
   })
   return {
     ...args,
-    listings
+    listings: listings.map(mappers.ListingView.toView)
   }
 }
 
@@ -66,7 +69,8 @@ export default _.compose(
     order: yup.string(), // TODO: Require specific values
     keywords: yup.string(),
     categoryId: yup.string(),
-    near: yup.mixed()
+    near: yup.mixed(),
+    posterId: yup.string()
   })),
   useService<Services>({
     mongo: makeMongo(),

@@ -32,7 +32,7 @@
     "node-fetch": "2.6.7",
     "node-geocoder": "^4.0.0",
     "postmark": "^3.0.1",
-    "radash": "^1.7.0",
+    "radash": "^1.14.1",
     "redis": "^4.0.4",
     "url-slug": "^3.0.3",
     "uuid": "^8.3.2",

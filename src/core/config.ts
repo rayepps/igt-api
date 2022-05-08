@@ -16,7 +16,8 @@ const config = {
   mongoUri: get('MONGO_URI'),
   imageKitPublicKey: get('IMAGE_KIT_PUBLIC_KEY'),
   imageKitPrivateKey: get('IMAGE_KIT_PRIVATE_KEY'),
-  imageKitUrlEndpoint: get('IMAGE_KIT_URL_ENDPOINT')
+  imageKitUrlEndpoint: get('IMAGE_KIT_URL_ENDPOINT'),
+  postmarkToken: get('POSTMARK_TOKEN')
 }
 
 export type Config = typeof config

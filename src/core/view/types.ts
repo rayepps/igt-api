@@ -9,6 +9,7 @@ export interface UserView {
   phone: string
   role: t.UserRole
   lastLoggedInAt: number
+  location: t.GeoLocation
 }
 
 export type CategoryView = {
@@ -34,6 +35,7 @@ export type ListingView = {
   _view: 'igt.listing'
   id: string
   title: string
+  slug: string
   status: t.ListingStatus
   categoryId: string
   category: CategoryView
@@ -47,4 +49,5 @@ export type ListingView = {
   user: Pick<UserView, '_view' | 'id' | 'fullName'>
   addedAt: number
   updatedAt: number
+  expiresAt: number
 }

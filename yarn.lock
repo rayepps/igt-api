@@ -2997,10 +2997,15 @@ querystring@0.2.0:
   resolved "https://registry.yarnpkg.com/querystring/-/querystring-0.2.0.tgz#b209849203bb25df820da756e747005878521620"
   integrity sha1-sgmEkgO7Jd+CDadW50cAWHhSFiA=
 
-radash@^1.1.0, radash@^1.3.0, radash@^1.5.2, radash@^1.7.0:
+radash@^1.1.0, radash@^1.3.0, radash@^1.5.2:
   version "1.7.0"
   resolved "https://registry.yarnpkg.com/radash/-/radash-1.7.0.tgz#76c94a07a3093303b38ff050f8717aa38ce9f594"
   integrity sha512-h3KyDJjpYIz7FSUD39Npz72/wK6N/X9sEXh19SfvG/NFSC1fmmq/AFk4D0yJV+rhuSQ3LHMNiioRwq/cscYIMQ==
+
+radash@^1.14.1:
+  version "1.14.1"
+  resolved "https://registry.yarnpkg.com/radash/-/radash-1.14.1.tgz#c0e4ea9c7b99659f28695d260b3bcea43d8b447e"
+  integrity sha512-amhPcXetQyQ2WJ/uB4FUPGGbgkxshEac28sTajrUOWWBGmrTjYXWW1Y2gLEEfimVvw/jl9xJ3nnIBag+edm3wA==
 
 randombytes@^2.1.0:
   version "2.1.0"

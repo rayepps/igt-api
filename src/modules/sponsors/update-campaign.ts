@@ -15,7 +15,7 @@ interface Args {
   sponsorId: t.Id<'sponsor'>
   key: string
   name?: string
-  image?: t.Asset
+  images?: t.Asset[]
   video?: Omit<t.Asset, 'id'>
   title?: string
   subtext?: string
@@ -60,7 +60,7 @@ async function updateSponsorCampaign({ args, services }: Props<Args, Services>):
   const newCampaign: t.SponsorCampaign = {
     ...campaign,
     name: args.name ?? campaign.name,
-    image: args.image ?? campaign.image,
+    images: args.images ?? campaign.images,
     video: args.video ?? campaign.video,
     title: args.title ?? campaign.title,
     subtext: args.subtext ?? campaign.subtext,
@@ -68,7 +68,7 @@ async function updateSponsorCampaign({ args, services }: Props<Args, Services>):
     url: args.url ?? campaign.url,
     updatedAt: Date.now()
   }
-  const newCampaigns = replace(sponsor.campaigns, newCampaign)
+  const newCampaigns = _.replace(sponsor.campaigns, newCampaign, c => c.key === newCampaign.key)
   await mongo.updateSponsorCampaigns({
     id: sponsor.id,
     campaigns: newCampaigns
@@ -80,13 +80,6 @@ async function updateSponsorCampaign({ args, services }: Props<Args, Services>):
       campaigns: newCampaigns
     })
   }
-}
-
-const replace = (campaigns: t.SponsorCampaign[], campaign: t.SponsorCampaign) => {
-  return campaigns.reduce((acc, camp) => {
-    if (campaign.key === camp.key) return [...acc, campaign]
-    return acc
-  }, [] as t.SponsorCampaign[])
 }
 
 export default _.compose(
@@ -101,10 +94,10 @@ export default _.compose(
     sponsorId: yup.string().required(),
     key: yup.string().required(),
     name: yup.string(),
-    image: yup.object({
+    images: yup.array().of(yup.object({
       id: yup.string(),
       url: yup.string().url()
-    }),
+    })),
     video: yup.object({
       url: yup.string().url()
     }),

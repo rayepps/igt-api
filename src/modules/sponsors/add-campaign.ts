@@ -14,7 +14,8 @@ import mappers from '../../core/view/mappers'
 interface Args {
   sponsorId: t.Id<'sponsor'>
   name: string
-  image: null | t.Asset
+  key: string
+  images: t.Asset[]
   video: null | Omit<t.Asset, 'id'>
   title: null | string
   subtext: null | string
@@ -48,12 +49,10 @@ async function addCampaignToSponsor({ args, services }: Props<Args, Services>): 
     })
   }
   
-  const key = _.dashCase(args.name)
-
-  const existing = sponsor.campaigns.find(c => c.key === key)
+  const existing = sponsor.campaigns.find(c => c.key === args.key)
   if (existing) {
     throw errors.badRequest({
-      details: `Campaign with key (${key}) already exists`,
+      details: `Campaign with key (${args.key}) already exists`,
       key: 'igt.err.sponsors.add-campaign.duplicate-key'
     })
   }
@@ -61,7 +60,6 @@ async function addCampaignToSponsor({ args, services }: Props<Args, Services>): 
   const campaigns: t.SponsorCampaign[] = [
     ...sponsor.campaigns, {
     ...args,
-    key,
     createdAt: Date.now(),
     updatedAt: Date.now()
   }]
@@ -89,17 +87,18 @@ export default _.compose(
   useJsonArgs<Args>(yup => ({
     sponsorId: yup.string().required(),
     name: yup.string().required(),
-    image: yup.object({
-      id: yup.string(),
-      url: yup.string().url()
-    }).nullable().default(null),
+    key: yup.string().matches(/^[a-z0-9\-]*$/).required(),
+    images: yup.array().of(yup.object({
+      id: yup.string().required(),
+      url: yup.string().url().required()
+    })).required(),
     video: yup.object({
       url: yup.string().url()
     }).nullable().default(null),
-    title: yup.string(),
-    subtext: yup.string(),
-    cta: yup.string(),
-    url: yup.string().url()
+    title: yup.string().nullable(),
+    subtext: yup.string().nullable(),
+    cta: yup.string().nullable(),
+    url: yup.string().url().nullable()
   })),
   useService<Services>({
     mongo: makeMongo()

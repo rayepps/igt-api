@@ -33,7 +33,7 @@ const createMongoClient = (client: Mongo.MongoClient) => {
     findUserByLegacyId: findItem({
       db,
       collection: 'users',
-      toQuery: (aspRecordId) => ({
+      toQuery: aspRecordId => ({
         _aspRecordId: aspRecordId
       }),
       toModel: mappers.User.toModel
@@ -58,16 +58,17 @@ const createMongoClient = (client: Mongo.MongoClient) => {
         order: t.UserOrder
         disabled?: boolean
         name?: string
-      }) => _.shake({
-        disabled: !disabled ? undefined : disabled,
-        fullName: !name
-          ? undefined
-          : {
-              $regex: name,
-              $options: 'i'
-            }
-      }),
-      toOptions: (args) => ({
+      }) =>
+        _.shake({
+          disabled: !disabled ? undefined : disabled,
+          fullName: !name
+            ? undefined
+            : {
+                $regex: name,
+                $options: 'i'
+              }
+        }),
+      toOptions: args => ({
         skip: args.page > 0 ? args.page * args.pageSize : undefined,
         limit: args.pageSize,
         sort: (() => {
@@ -87,10 +88,7 @@ const createMongoClient = (client: Mongo.MongoClient) => {
     updateUser: updateOne({
       db,
       collection: 'users',
-      toQuery: (args: { 
-        id: t.Id<'user'>
-        patch: Partial<t.User>
-      }) => ({
+      toQuery: (args: { id: t.Id<'user'>; patch: Partial<t.User> }) => ({
         _id: mid(args.id)
       }),
       toUpdate: args => ({
@@ -120,7 +118,7 @@ const createMongoClient = (client: Mongo.MongoClient) => {
       toQuery: (args: { id: t.Id<'category'>; label: string; slug: string }) => ({
         _id: mid(args.id)
       }),
-      toUpdate: (args) => ({
+      toUpdate: args => ({
         $set: {
           label: args.label,
           slug: args.slug
@@ -158,16 +156,16 @@ const createMongoClient = (client: Mongo.MongoClient) => {
     listSponsors: findAll({
       db,
       collection: 'sponsors',
+      query: {
+        deleted: { $ne: true }
+      },
       toModel: mappers.Sponsor.toModel
     }),
     updateSponsor: updateOne({
       db,
       collection: 'sponsors',
-      toQuery: (args: { 
-        id: t.Id<'sponsor'> 
-        patch: Partial<Omit<t.Sponsor, 'id'>> 
-      }) => ({
-        _id: mid(args.id)
+      toQuery: (args: { id: t.Id<'sponsor'>; patch: Partial<Omit<t.Sponsor, 'id'>> }) => ({
+        _id: mid(args.id),
       }),
       toUpdate: ({ patch }) => ({
         $set: patch
@@ -180,6 +178,16 @@ const createMongoClient = (client: Mongo.MongoClient) => {
         _id: mid(id)
       }),
       toModel: mappers.Sponsor.toModel
+    }),
+    deleteSponsor: updateOne({
+      db,
+      collection: 'sponsors',
+      toQuery: (id: t.Id<'sponsor'>) => ({
+        _id: mid(id)
+      }),
+      toUpdate: () => ({
+        $set: { deleted: true, deletedAt: Date.now() }
+      })
     }),
 
     //
@@ -194,10 +202,12 @@ const createMongoClient = (client: Mongo.MongoClient) => {
         _categoryId: mid(listing.categoryId),
         _userId: mid(listing.userId),
         _text: `${listing.title} ${listing.description}`,
-        _location: listing.location ? {
-          type: 'Point',
-          coordinates: [listing.location.longitude, listing.location.latitude]
-        } : null
+        _location: listing.location
+          ? {
+              type: 'Point',
+              coordinates: [listing.location.longitude, listing.location.latitude]
+            }
+          : null
       })
     }),
     findListingById: findItem({
@@ -239,34 +249,38 @@ const createMongoClient = (client: Mongo.MongoClient) => {
       toQuery: ({
         near,
         categoryId,
-        keywords
+        keywords,
+        posterId
       }: {
         page: number
         pageSize: number
         order: t.ListingOrder
+        posterId?: t.Id<'user'>
         categoryId?: t.Id<'category'>
         near?: t.GeoPoint & { proximity: number }
         keywords?: string
-      }) => _.shake({
-        _location: !near
-          ? undefined
-          : {
-              $near: {
-                $geometry: {
-                  type: 'Point',
-                  coordinates: [near.latitude, near.longitude]
-                },
-                $maxDistance: near.proximity
+      }) =>
+        _.shake({
+          _location: !near
+            ? undefined
+            : {
+                $near: {
+                  $geometry: {
+                    type: 'Point',
+                    coordinates: [near.latitude, near.longitude]
+                  },
+                  $maxDistance: near.proximity
+                }
+              },
+          _userId: !posterId ? undefined : mid(posterId),
+          _categoryId: !categoryId ? undefined : mid(categoryId),
+          _text: !keywords
+            ? undefined
+            : {
+                $regex: keywords.split(' ').join('|'),
+                $options: 'i'
               }
-            },
-        _categoryId: !categoryId ? undefined : mid(categoryId),
-        _text: !keywords
-          ? undefined
-          : {
-              $regex: keywords.split(' ').join('|'),
-              $options: 'i'
-            }
-      }),
+        }),
       toOptions: args => ({
         skip: args.page > 0 ? args.page * args.pageSize : undefined,
         limit: args.pageSize,
@@ -288,16 +302,14 @@ const createMongoClient = (client: Mongo.MongoClient) => {
     updateListing: updateOne({
       db,
       collection: 'listings',
-      toQuery: ({ id }: { id: t.Id<'listing'>; patch: Omit<t.Listing, 'id' | 'userId' | 'user' | 'createdAt'> }) => ({
+      toQuery: ({ id }: { id: t.Id<'listing'>; patch: Omit<t.Listing, 'id' | 'userId' | 'user' | 'createdAt' | 'location'> }) => ({
         _id: mid(id)
       }),
       toUpdate: ({ patch }) => ({
-        ...patch,
-        _categoryId: mid(patch.categoryId),
-        _text: `${patch.title} ${patch.description}`,
-        _location: {
-          type: 'Point',
-          coordinates: [patch.location.latitude, patch.location.longitude]
+        $set: {
+          ...patch,
+          _categoryId: mid(patch.categoryId),
+          _text: `${patch.title} ${patch.description}`
         }
       })
     }),
@@ -315,18 +327,15 @@ const createMongoClient = (client: Mongo.MongoClient) => {
     updateSponsorCampaigns: updateOne({
       db,
       collection: 'sponsors',
-      toQuery: ({ 
-        id 
-      }: { 
-        id: t.Id<'sponsor'>
-        campaigns: t.SponsorCampaign[]
-      }) => ({
+      toQuery: ({ id }: { id: t.Id<'sponsor'>; campaigns: t.SponsorCampaign[] }) => ({
         _id: mid(id)
       }),
       toUpdate: ({ campaigns }) => ({
-        campaigns
+        $set: {
+          campaigns
+        }
       })
-    }),
+    })
   }
 }
 

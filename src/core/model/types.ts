@@ -82,6 +82,7 @@ export interface Listing {
   _aspRecordId: number | null
   addedAt: number
   updatedAt: number
+  expiresAt: number
 }
 
 export interface PageViewEvent {
@@ -105,7 +106,7 @@ export interface SponsorEngagedEvent {
 export interface SponsorCampaign {
   name: string
   key: string
-  image: null | Asset
+  images: Asset[]
   video: null | Omit<Asset, 'id'>
   title: null | string
   subtext: null | string
@@ -122,6 +123,8 @@ export interface Sponsor {
   tier: SponsorTier
   categories: Category[]
   campaigns: SponsorCampaign[]
+  deleted: boolean
+  deletedAt: number
   createdAt: number
   updatedAt: number
 }

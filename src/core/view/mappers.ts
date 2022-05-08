@@ -12,7 +12,8 @@ export class UserView {
       phone: model.phone,
       role: model.role,
       lastLoggedInAt: model.lastLoggedInAt,
-      createdAt: model.createdAt
+      createdAt: model.createdAt,
+      location: model.location
     }
   }
 }
@@ -36,7 +37,7 @@ export class SponsorView {
       name: model.name,
       status: model.status,
       tier: model.tier,
-      categories: model.categories,
+      categories: model.categories.map(CategoryView.toView),
       campaigns: model.campaigns,
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,
@@ -50,6 +51,7 @@ export class ListingView {
       _view: 'igt.listing',
       id: model.id,
       title: model.title,
+      slug: model.slug,
       status: model.status,
       categoryId: model.categoryId,
       category: CategoryView.toView(model.category),
@@ -66,7 +68,8 @@ export class ListingView {
         fullName: model.user.fullName
       },
       addedAt: model.addedAt,
-      updatedAt: model.updatedAt
+      updatedAt: model.updatedAt,
+      expiresAt: model.expiresAt
     }
   }
 }
