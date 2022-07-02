@@ -18,7 +18,7 @@ interface Args {
   keywords?: string
   categoryId?: t.Id<'category'>
   posterId: t.Id<'user'>
-  near?: { 
+  near?: {
     zip: number
     proximity: number 
   }
