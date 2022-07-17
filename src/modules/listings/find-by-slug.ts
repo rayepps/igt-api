@@ -23,8 +23,7 @@ type Response = {
 
 async function findListingBySlug({ args, services, auth }: Props<Args, Services, TokenAuth>): Promise<Response> {
   const { mongo } = services
-  const [lerr, listing] = await mongo.findListingBySlug(args.slug)
-  if (lerr) throw lerr
+  const listing = await mongo.listings.findBySlug(args.slug)
   if (!listing) {
     throw errors.notFound({
       details: `Listing with slug(${args.slug}) not found`,

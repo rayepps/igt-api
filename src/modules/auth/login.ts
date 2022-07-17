@@ -29,7 +29,7 @@ async function loginWithEmailPass({ services, args }: Props<Args, Services>): Pr
   const { email, password } = args
 
   // Lookup user with email
-  const [err, user] = await mongo.findUserByEmail({ email })
+  const [err, user] = await _.try(mongo.users.findByEmail)(email)
 
   if (err) {
     console.error(err)

@@ -32,7 +32,7 @@ interface Response {
 async function adminUpdateUser({ args, services }: Props<Args, Services, TokenAuth>): Promise<Response> {
   const { mongo } = services
 
-  const [lerr, user] = await mongo.findUserById(args.id)
+  const user = await mongo.users.find(args.id)
   if (!user) {
     throw errors.notFound({
       details: `A user with the provided id(${args.id}) was not found`,
@@ -48,11 +48,7 @@ async function adminUpdateUser({ args, services }: Props<Args, Services, TokenAu
     disabled: args.disabled ?? user.disabled
   }
 
-  const [err] = await mongo.updateUser({
-    id: args.id,
-    patch
-  })
-  if (err) throw err
+  await mongo.users.update(args.id, patch)
 
   return {
     user: mappers.UserView.toView({

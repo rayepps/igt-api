@@ -28,7 +28,7 @@ async function finishPasswordReset({ services, args }: Props<Args, Services>): P
   const { mongo } = services
   const { id: userId, code, password } = args
 
-  const [err, user] = await mongo.findUserById(userId)
+  const [err, user] = await _.try(mongo.users.find)(userId)
 
   if (err) {
     console.error(err)
@@ -61,12 +61,9 @@ async function finishPasswordReset({ services, args }: Props<Args, Services>): P
     })
   }
 
-  await mongo.updateUser({
-    id: user.id,
-    patch: {
-      _passwordHash: hash,
-      _passwordReset: null
-    }
+  await mongo.users.update(user.id, {
+    _passwordHash: hash,
+    _passwordReset: null
   })
 
   return {

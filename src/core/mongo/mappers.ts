@@ -27,3 +27,9 @@ export class Listing {
     }) as t.Listing
   }
 }
+
+export class ListingReport {
+  static toModel(document: t.ListingReportDocument): t.ListingReport {
+    return document as t.ListingReport
+  }
+}

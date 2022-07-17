@@ -1,1 +1,1 @@
-export type Collection = 'users' | 'categories' | 'listings' | 'sponsors'
+export type Collection = 'users' | 'categories' | 'listings' | 'sponsors' | 'reports'

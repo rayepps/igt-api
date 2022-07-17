@@ -28,15 +28,17 @@ async function addSponsor({ args, services }: Props<Args, Services>): Promise<Re
   const { mongo } = services
   const sponsor: t.Sponsor = {
     id: model.id('sponsor'),
-    name: args.name,
     status: 'disabled',
+    name: args.name,
     tier: 'trial',
     categories: [],
     campaigns: [],
+    deleted: false,
+    deletedAt: null,
     createdAt: Date.now(),
     updatedAt: Date.now()
   }
-  await mongo.addSponsor(sponsor)
+  await mongo.sponsors.add(sponsor)
   return {
     sponsor: mappers.SponsorView.toView(sponsor)
   }

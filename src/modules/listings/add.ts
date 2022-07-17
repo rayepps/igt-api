@@ -38,8 +38,8 @@ async function addListing({ args, auth, services }: Props<Args, Services, TokenA
   const userId = auth.token.sub as t.Id<'user'>
 
   // Lookup the user and category
-  const [uerr, user] = await mongo.findUserById(userId as t.Id<'user'>)
-  const [cerr, category] = await mongo.findCategory(args.categoryId)
+  const user = await mongo.users.find(userId as t.Id<'user'>)
+  const category = await mongo.categories.find(args.categoryId)
 
   const listingId = model.id('listing')
 
@@ -71,8 +71,7 @@ async function addListing({ args, auth, services }: Props<Args, Services, TokenA
     updatedAt: Date.now(),
     expiresAt: addDays(new Date(), 45).getTime()
   }
-  const [err] = await mongo.addListing(listing)
-  if (err) throw err
+  await mongo.listings.add(listing)
   return {
     listing: mappers.ListingView.toView(listing)
   }

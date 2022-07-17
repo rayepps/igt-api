@@ -20,3 +20,7 @@ export type ListingDocument = MongoDocument & t.Listing & {
     coordinates: [number, number]
   }
 }
+
+export type ListingReportDocument = MongoDocument & t.ListingReport & {
+  _listingId: ObjectId
+}

@@ -25,8 +25,7 @@ type Response = void
 async function updateCategory({ args, services }: Props<Args, Services>): Promise<Response> {
   const { mongo } = services
 
-  const [eerr, existing] = await mongo.findCategoryBySlug(args.slug)
-  if (eerr) throw eerr
+  const existing = await mongo.categories.findBySlug(args.slug)
   if (existing) {
     throw errors.badRequest({
       details: `A category with the provided slug (${args.slug}) already exists. Slugs must be unique`,
@@ -34,12 +33,10 @@ async function updateCategory({ args, services }: Props<Args, Services>): Promis
     })
   }
 
-  const [err] = await mongo.updateCategory({ 
-    id: args.id, 
+  await mongo.categories.update(args.id, {
     label: args.label,
     slug: args.slug
   })
-  if (err) throw err
 }
 
 export default _.compose(

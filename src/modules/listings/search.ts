@@ -12,15 +12,15 @@ import makeGeo, { GeoClient } from '../../core/geo'
 import mappers from '../../core/view/mappers'
 
 interface Args {
-  pageSize?: number
+  size?: number
   page?: number
   order?: t.ListingOrder
   keywords?: string
-  categoryId?: t.Id<'category'>
+  category?: string
   posterId: t.Id<'user'>
   near?: {
-    zip: number
-    proximity: number 
+    zip: string
+    proximityInMiles: number 
   }
 }
 
@@ -31,31 +31,33 @@ interface Services {
 }
 
 type Response = Args & {
+  total: number
   listings: t.ListingView[]
 }
 
 async function searchListings({ args, services }: Props<Args, Services>): Promise<Response> {
   const { mongo, geo } = services
-  const [lerr, location] = args.near
+  const location = args.near
     ? await geo.lookupZip(args.near.zip)
-    : [null, null]
-  if (lerr) {
-    throw lerr
-  }
-  const [err, listings] = await mongo.searchListings({
-    near: args.near && {
+    : null
+  const category = args.category
+    ? await mongo.categories.findBySlug(args.category)
+    : null
+  const listings = await mongo.listings.search({
+    near: args.near?.zip && {
       ...location,
-      proximity: args.near.proximity
+      proximity: args.near.proximityInMiles
     },
     posterId: args.posterId,
     page: args.page ? args.page - 1 : 0,
-    pageSize: args.pageSize ?? 25,
-    categoryId: args.categoryId,
+    pageSize: args.size ?? 25,
+    categoryId: category?.id,
     order: args.order ?? 'updated-at:asc'
   })
   return {
     ...args,
-    listings: listings.map(mappers.ListingView.toView)
+    total: listings?.count,
+    listings: listings?.results.map(mappers.ListingView.toView) ?? []
   }
 }
 
@@ -64,12 +66,15 @@ export default _.compose(
   useLambda(),
   useCors(),
   useJsonArgs<Args>(yup => ({
-    pageSize: yup.number().integer().min(1).max(100),
-    page: yup.number().integer().min(1),
+    pageSize: yup.number().integer().default(25).max(100),
+    page: yup.number().integer().default(1),
     order: yup.string(), // TODO: Require specific values
     keywords: yup.string(),
-    categoryId: yup.string(),
-    near: yup.mixed(),
+    category: yup.string(),
+    near: yup.object({
+      zip: yup.string(), // TODO: Require zip format
+      proximityInMiles: yup.number()
+    }),
     posterId: yup.string()
   })),
   useService<Services>({

@@ -23,8 +23,7 @@ interface Response {
 
 async function listSponsors({ services }: Props<Args, Services>): Promise<Response> {
   const { mongo } = services
-  const [err, sponsors] = await mongo.listSponsors()
-  if (err) throw err
+  const sponsors = await mongo.sponsors.list()
   return {
     sponsors: sponsors.map(mappers.SponsorView.toView)
   }

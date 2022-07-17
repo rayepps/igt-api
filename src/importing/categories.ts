@@ -26,7 +26,7 @@ const run = async () => {
       _aspRecordId: record.CatID
     }
     console.log('x--> creating... ', category)
-    await mongo.addCategory(category)
+    await mongo.categories.add(category)
     await new Promise(res => setTimeout(res, 1000))
   }
 

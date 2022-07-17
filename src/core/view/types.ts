@@ -51,3 +51,27 @@ export type ListingView = {
   updatedAt: number
   expiresAt: number
 }
+
+export type ElevatedListingView = ListingView & {
+  user: Pick<UserView, '_view' | 'id' | 'fullName' | 'email'>
+}
+
+export type ListingReportView = {
+  _view: 'igt.listing-report'
+  id: string
+  listingId: string
+  status: 'pending' | 'dismissed'
+  listing: ElevatedListingView
+  reports: {
+    anonymous: boolean
+    user: Pick<UserView, 'id' | 'email' | 'fullName'> | null
+    timestamp: number
+    snapshot: ElevatedListingView
+    message: string
+  }[]
+  dismissedAt: number
+  dismissedBy: Pick<UserView, 'id' | 'email' | 'fullName'>
+  expiresAt: number
+  createdAt: number
+  updatedAt: number
+}

@@ -1,3 +1,4 @@
+import _ from 'radash'
 import * as t from '../types'
 import addDays from 'date-fns/addDays'
 import isAfter from 'date-fns/isAfter'
@@ -29,6 +30,27 @@ export class CategoryView {
   }
 }
 
+export class ListingReportView {
+  static toView(model: t.ListingReport): t.ListingReportView {
+    return {
+      _view: 'igt.listing-report',
+      id: model.id,
+      listingId: model.listingId,
+      status: model.status,
+      listing: ElevatedListingView.toView(model.reports[0].snapshot),
+      reports: model.reports.map(report => ({
+        ...report,
+        snapshot: ElevatedListingView.toView(report.snapshot)
+      })),
+      dismissedAt: model.dismissedAt,
+      dismissedBy: model.dismissedBy,
+      expiresAt: model.expiresAt,
+      createdAt: model.createdAt,
+      updatedAt: model.updatedAt
+    }
+  }
+}
+
 export class SponsorView {
   static toView(model: t.Sponsor): t.SponsorView {
     return {
@@ -40,7 +62,20 @@ export class SponsorView {
       categories: model.categories.map(CategoryView.toView),
       campaigns: model.campaigns,
       createdAt: model.createdAt,
-      updatedAt: model.updatedAt,
+      updatedAt: model.updatedAt
+    }
+  }
+}
+
+export class ElevatedListingView {
+  static toView(model: t.Listing): t.ElevatedListingView {
+    const view = ListingView.toView(model)
+    return {
+      ...view,
+      user: {
+        ...view.user,
+        email: model.user.email
+      }
     }
   }
 }
@@ -78,5 +113,6 @@ export default {
   UserView,
   CategoryView,
   ListingView,
-  SponsorView
+  SponsorView,
+  ListingReportView
 }

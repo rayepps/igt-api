@@ -27,7 +27,7 @@ interface Response {
 
 async function addCategory({ args, services }: Props<Args, Services>): Promise<Response> {
   const { mongo } = services
-  const [err, existing] = await mongo.findCategoryBySlug(args.slug)
+  const [err, existing] = await _.try(mongo.categories.findBySlug)(args.slug)
   if (err) throw err
   if (existing) {
     throw errors.badRequest({
@@ -41,7 +41,7 @@ async function addCategory({ args, services }: Props<Args, Services>): Promise<R
     label: args.label,
     _aspRecordId: null
   }
-  await mongo.addCategory(category)
+  await mongo.categories.add(category)
   return {
     category: mappers.CategoryView.toView(category)
   }

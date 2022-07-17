@@ -24,19 +24,17 @@ type Response = void
 async function deleteListing({ args, services, auth }: Props<Args, Services, TokenAuth>): Promise<Response> {
   const { mongo } = services
   const userId = auth.token.sub as t.Id<'user'>
-  const [lerr, listing] = await mongo.findListingByIdForUser({
+  const listing = await mongo.listings.findByIdForUser({
     id: args.id,
     userId
   })
-  if (lerr) throw lerr
   if (!listing) {
     throw errors.notFound({
       details: `Listing with id(${args.id}) not found`,
       key: 'igt.err.listings.delete.not-found'
     })
   }
-  const [err] = await mongo.deleteListing(args.id)
-  if (err) throw err
+  await mongo.listings.delete(args.id)
 }
 
 export default _.compose(

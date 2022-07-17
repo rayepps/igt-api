@@ -1,16 +1,15 @@
+import path from 'path'
 import { getFunctionMap, start, lambdaFrameworkMapper } from '@exobase/local'
 import chalk from 'chalk'
 
-const whitelist = [
-  // 'enrichEventOnChange'
-]
-
-const functions = getFunctionMap(process.cwd())
+const functions = getFunctionMap({
+  moduleDirectoryPath: path.join(__dirname, 'modules')
+})
 
 start({
   port: process.env.PORT,
   framework: lambdaFrameworkMapper,
-  functions: (whitelist.length > 0 ? functions.filter(f => whitelist.includes(f.function)) : functions).map((f) => {
+  functions: functions.map((f) => {
     const func = require(f.paths.import).default
     return { ...f,
       func: (...args: any[]) => {

@@ -1,10 +1,10 @@
 import * as t from './types'
-import { createPermission, createToken, Permission } from '@exobase/auth'
+import { createPermission, createToken, Permission, TokenAuth} from '@exobase/auth'
 import config from './config'
 import dur from 'durhuman'
 import bcrypt from 'bcryptjs'
 
-const make = (model: t.Model, action: 'read' | 'create' | 'update' | 'delete', scope?: '*' | t.Id<any>) => {
+const make = (model: t.Model, action: string, scope?: '*' | t.Id<any>) => {
   return createPermission(model, action, scope)
 }
 
@@ -47,6 +47,11 @@ export const permissions = {
     update: make('sponsor', 'update', '*'),
     create: make('sponsor', 'create', '*'),
     delete: make('sponsor', 'delete', '*'),
+  },
+  reports: {
+    read: make('report', 'read', '*'),
+    dismiss: make('report', 'dismiss', '*'),
+    removeListing: make('report', 'remove-listing', '*')
   }
 }
 
@@ -71,6 +76,8 @@ export const permissionsForUser = (user: t.User): Permission[] => {
         permissions.listing.delete.any,
         permissions.listing.read,
         permissions.listing.update.any,
+        permissions.reports.read,
+        permissions.reports.dismiss
       ]
     case 'user':
       return [
@@ -110,6 +117,11 @@ export async function comparePasswordToHash(providedPassword: string, savedHash:
   })
 }
 
+export type UserTokenAuth = TokenAuth<{
+  email: string
+  fullName: string
+}>
+
 export const generateToken = (user: t.User) => createToken({
   sub: user.id,
   type: 'id',
@@ -120,7 +132,8 @@ export const generateToken = (user: t.User) => createToken({
   permissions: permissionsForUser(user),
   provider: 'igt',
   extra: {
-    email: user.email
+    email: user.email,
+    fullName: user.fullName
   },
   secret: config.tokenSignatureSecret
 })

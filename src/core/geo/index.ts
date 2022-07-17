@@ -1,5 +1,5 @@
 import NodeGeocoder from 'node-geocoder'
-import { GeoClient } from './client'
+import { makeGeoClient, GeoClient } from './client'
 import config from '../config'
 
 /**
@@ -19,8 +19,8 @@ const nodeFetch = require('node-fetch')
 
 export type { GeoClient }
 
-export default function makeGeoClient() {
-  return new GeoClient(
+export default function makeGeo() {
+  return makeGeoClient(
     NodeGeocoder({
       provider: 'google',
       apiKey: config.googleGeocodingApiKey,

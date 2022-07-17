@@ -37,7 +37,7 @@ async function updateListing({ args, auth, services }: Props<Args, Services, Tok
   const { mongo } = services
   const userId = auth.token.sub as t.Id<'user'>
 
-  const [lerr, listing] = await mongo.findListingByIdForUser({
+  const listing = await mongo.listings.findByIdForUser({
     id: args.id,
     userId
   })
@@ -50,7 +50,7 @@ async function updateListing({ args, auth, services }: Props<Args, Services, Tok
   }
 
   // Lookup the user and category
-  const [cerr, category] = await mongo.findCategory(args.categoryId)
+  const category = await mongo.categories.find(args.categoryId)
 
   const newListing: t.Listing = {
     ...listing,
@@ -66,18 +66,14 @@ async function updateListing({ args, auth, services }: Props<Args, Services, Tok
     expiresAt: addDays(new Date(), 45).getTime()
   }
 
-  const [err] = await mongo.updateListing({
-    id: args.id,
-    patch: _.shake({ 
-      ...newListing, 
-      id: undefined, 
-      user: undefined, 
-      userId: undefined, 
-      createdAt: undefined,
-      location: undefined 
-    }) as Omit<t.Listing, "id" | "createdAt" | "user" | "userId" | 'location'>
-  })
-  if (err) throw err
+  await mongo.listings.update(args.id, _.shake({ 
+    ...newListing, 
+    id: undefined, 
+    user: undefined, 
+    userId: undefined, 
+    createdAt: undefined,
+    location: undefined 
+  }) as Omit<t.Listing, "id" | "createdAt" | "user" | "userId" | 'location'>)
 
   return {
     listing: mappers.ListingView.toView(newListing)

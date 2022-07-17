@@ -29,16 +29,15 @@ type Response = Args & {
 
 async function searchUsers({ args, services }: Props<Args, Services>): Promise<Response> {
   const { mongo } = services
-  const [err, users] = await mongo.searchUsers({
+  const users = await mongo.users.search({
     page: args.page ? args.page - 1 : 0,
     pageSize: args.pageSize ?? 25,
     order: args.order ?? 'created-at:asc',
     disabled: args.disabled,
     name: args.name
   })
-  if (err) throw err
   return {
-    users: users.map(mappers.UserView.toView), 
+    users: users.results.map(mappers.UserView.toView), 
     ...args
   }
 }

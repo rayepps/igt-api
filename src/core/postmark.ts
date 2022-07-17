@@ -18,7 +18,19 @@ const postmarkClient = (client: postmark.ServerClient) => ({
       Subject: opts.subject,
       TextBody: opts.body
     })
-  }
+  },
+  sendToSelf: async (opts: {
+    from: string
+    subject: string
+    body: string
+  }) => {
+    await client.sendEmail({
+      From: opts.from,
+      To: 'info@idahoguntrader.net',
+      Subject: opts.subject,
+      TextBody: opts.body
+    })
+  },
 })
 
 export type PostmarkClient = ReturnType<typeof postmarkClient>

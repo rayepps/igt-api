@@ -11,7 +11,7 @@
 //  kept in sync with the source.
 //
 
-export type Model = 'user' | 'listing' | 'sponsor' | 'category' | 'view'
+export type Model = 'user' | 'listing' | 'sponsor' | 'category' | 'view' | 'report'
 export type Id <M extends Model> = `igt.${M}.${string}`
 export type UserRole = 'user' | 'admin' | 'admin-observer'
 export type ListingOrder = `${'price' | 'updated-at'}:${'asc' | 'desc'}`
@@ -85,6 +85,27 @@ export interface Listing {
   expiresAt: number
 }
 
+// get all unresolved reports
+export interface ListingReport {
+  id: Id<'report'>
+  listingId: Id<'listing'>
+  status: 'pending' | 'dismissed'
+  reports: ListingReportEvent[]
+  dismissedAt: number
+  dismissedBy:  Pick<User, 'id' | 'email' | 'fullName'>
+  expiresAt: number
+  createdAt: number
+  updatedAt: number
+}
+
+export interface ListingReportEvent {
+  anonymous: boolean
+  user: Pick<User, 'id' | 'email' | 'fullName'> | null
+  timestamp: number
+  snapshot: Listing
+  message: string
+}
+
 export interface PageViewEvent {
   id: Id<'view'>
   class: 'listing'
@@ -124,7 +145,7 @@ export interface Sponsor {
   categories: Category[]
   campaigns: SponsorCampaign[]
   deleted: boolean
-  deletedAt: number
+  deletedAt: number | null
   createdAt: number
   updatedAt: number
 }

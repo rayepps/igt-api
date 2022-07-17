@@ -1,29 +1,32 @@
 import _ from 'radash'
 import * as t from '../../core/types'
-import type { Props } from '@exobase/core'
+import { Props } from '@exobase/core'
 import { useLogger } from '../../core/hooks/useLogger'
-import { useJsonArgs, useService } from '@exobase/hooks'
+import { useService } from '@exobase/hooks'
 import { useCors } from '../../core/hooks/useCors'
 import { useLambda } from '@exobase/lambda'
 import makeMongo, { MongoClient } from '../../core/mongo'
+import mappers from '../../core/view/mappers'
 import { usePermissionAuthorization } from '@exobase/auth/dist/permission'
 import { useTokenAuthentication } from '../../core/hooks/useTokenAuthentication'
 import { permissions } from '../../core/auth'
-import { TokenAuth } from '@exobase/auth'
 
-interface Args {
-  id: t.Id<'listing'>
-}
+interface Args {}
 
 interface Services {
   mongo: MongoClient
 }
 
-type Response = void
+type Response = {
+  reports: t.ListingReportView[]
+}
 
-async function adminDeleteListing({ args, services }: Props<Args, Services, TokenAuth>): Promise<Response> {
+async function listAllReports({ services }: Props<Args, Services>): Promise<Response> {
   const { mongo } = services
-  await mongo.listings.delete(args.id)
+  const reports = await mongo.reports.list()
+  return {
+    reports: reports.map(mappers.ListingReportView.toView)
+  }
 }
 
 export default _.compose(
@@ -32,13 +35,10 @@ export default _.compose(
   useCors(),
   useTokenAuthentication(),
   usePermissionAuthorization({
-    require: [permissions.listing.delete.any]
+    require: [permissions.reports.read]
   }),
-  useJsonArgs<Args>(yup => ({
-    id: yup.string().required()
-  })),
   useService<Services>({
     mongo: makeMongo()
   }),
-  adminDeleteListing
+  listAllReports
 )

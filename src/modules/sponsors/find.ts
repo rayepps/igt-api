@@ -26,8 +26,7 @@ interface Response {
 async function findSponsor({ args, services }: Props<Args, Services>): Promise<Response> {
   const { mongo } = services
   const { sponsorId } = args
-  const [err, sponsor] = await mongo.findSponsor(sponsorId)
-  if (err) throw err
+  const sponsor = await mongo.sponsors.find(sponsorId)
   return {
     sponsor: mappers.SponsorView.toView(sponsor)
   }

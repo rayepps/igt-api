@@ -1,3 +1,4 @@
+import _ from 'radash'
 import * as tedious from 'tedious'
 import * as t from '../core/types'
 import makeMongo, { MongoClient } from '../core/mongo'
@@ -16,7 +17,7 @@ const run = async () => {
 
   const mongo = makeMongo()
   for (const record of rows) {
-    const [lookupError, existing] = await mongo.findUserByLegacyId(record.CustId)
+    const [lookupError, existing] = await _.try(mongo.users.findByLegacyId)(record.CustId)
     if (lookupError) throw lookupError
     if (existing) {
       console.warn('SKIPPING: User with record id already exists: ', {
@@ -44,9 +45,8 @@ const run = async () => {
       updatedAt: Date.now()
     }
     console.log('adding...', user)
-    const [err] = await mongo.addUser(user)
-    if (err) throw err
-
+    await mongo.users.add(user)
+    
     await new Promise(res => setTimeout(res, 500))
   }
 

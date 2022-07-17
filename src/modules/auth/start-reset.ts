@@ -25,7 +25,7 @@ async function startPasswordReset({ services, args }: Props<Args, Services>): Pr
   const { mongo, postmark } = services
 
   // Lookup user with email
-  const [err, user] = await mongo.findUserByEmail({ email: args.email })
+  const [err, user] = await _.try(mongo.users.findByEmail)(args.email)
 
   if (err) {
     console.error(err)
@@ -58,13 +58,10 @@ async function startPasswordReset({ services, args }: Props<Args, Services>): Pr
 
   const code = uuid().replace(/\-/g, '')
   const name = _.first(user.fullName.split(' ').filter(c => !!c && !!c.trim()), user.fullName)
-  await mongo.updateUser({
-    id: user.id,
-    patch: {
-      _passwordReset: {
-        requestedAt: Date.now(),
-        code
-      }
+  await mongo.users.update(user.id, {
+    _passwordReset: {
+      requestedAt: Date.now(),
+      code
     }
   })
   await postmark.sendEmail({

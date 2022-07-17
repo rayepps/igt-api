@@ -34,14 +34,7 @@ interface Response {
 async function updateSponsorCampaign({ args, services }: Props<Args, Services>): Promise<Response> {
   const { mongo } = services
 
-  const [serr, sponsor] = await mongo.findSponsor(args.sponsorId)
-  if (serr) {
-    console.error(serr)
-    throw errors.unknown({
-      details: 'Unkonwn issue when looking up sponsor',
-      key: 'igt.err.sponsors.update-campaign.lookup-issue'
-    })
-  }
+  const sponsor = await mongo.sponsors.find(args.sponsorId)
   if (!sponsor) {
     throw errors.badRequest({
       details: `Sponsor with id (${args.sponsorId}) not found`,
@@ -69,8 +62,7 @@ async function updateSponsorCampaign({ args, services }: Props<Args, Services>):
     updatedAt: Date.now()
   }
   const newCampaigns = _.replace(sponsor.campaigns, newCampaign, c => c.key === newCampaign.key)
-  await mongo.updateSponsorCampaigns({
-    id: sponsor.id,
+  await mongo.sponsors.campaigns.update(sponsor.id, {
     campaigns: newCampaigns
   })
 

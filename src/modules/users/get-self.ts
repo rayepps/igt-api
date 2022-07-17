@@ -25,8 +25,7 @@ type Response = {
 async function getSelf({ args, services, auth }: Props<Args, Services, TokenAuth>): Promise<Response> {
   const { mongo } = services
   const userId = auth.token.sub as t.Id<'user'>
-  const [err, user] = await mongo.findUserById(userId)
-  if (err) throw err
+  const user = await mongo.users.find(userId)
   return {
     user: mappers.UserView.toView(user)
   }

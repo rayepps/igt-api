@@ -6,6 +6,7 @@ import slugger from 'url-slug'
 import mssql from './mssql'
 import fmt from '../core/fmt'
 import makeGeo from '../core/geo'
+import addDays from 'date-fns/addDays'
 
 const run = async () => {
   console.log('x--> connecting...')
@@ -20,13 +21,11 @@ const run = async () => {
   const geo = makeGeo()
 
   // Get categories for matching
-  const [cerr, categories] = await mongo.listCategories()
-  if (cerr) throw cerr
+  const categories = await mongo.categories.list()
 
   for (const record of rows) {
 
-    const [lerr, existing] = await mongo.findListingByLegacyId(record.ListingId)
-    if (lerr) throw lerr
+    const existing = await mongo.listings.findByLegacyId(record.ListingId)
     if (existing) {
       console.log('SKIPPING: listing with asp record id exists', {
         id: existing.id,
@@ -37,8 +36,7 @@ const run = async () => {
     }
 
     const cat = categories.find(c => c._aspRecordId === record.CatId) ?? categories[0]
-    const [uerr, user] = await mongo.findUserByLegacyId(record.CustId)
-    if (uerr) throw uerr
+    const user = await mongo.users.findByLegacyId(record.CustId)
     if (!user) {
       console.warn('SKIPPING: The user for this listing has not been created', {
         ListingId: record.ListingId,
@@ -49,8 +47,7 @@ const run = async () => {
     const location = await (async () => {
       if (user.location) return user.location
       console.log(`Record: ${record.City.trim()}, ${record.State.trim()}`)
-      const [geoErr, geoResult] = await geo.lookupCityState(`${record.City.trim()}, ${record.State.trim()}`)
-      if (geoErr) throw geoErr
+      const geoResult = await geo.lookupCityState(`${record.City.trim()}, ${record.State.trim()}`)
       if (!geoResult) throw { message: 'Could not find location for listing', record }
       return geoResult
     })()
@@ -59,13 +56,9 @@ const run = async () => {
 
     if (!user.location) {
       console.log('updating user location!')
-      const [uuerr] = await mongo.updateUser({
-        id: user.id,
-        patch: {
-          location
-        }
+      await mongo.users.update(user.id, {
+        location
       })
-      if (uuerr) throw uuerr
     }
 
     const listingId = model.id('listing')
@@ -94,11 +87,11 @@ const run = async () => {
       },
       _aspRecordId: record.ListingId,
       addedAt: new Date(record.DTRun).getTime(),
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      expiresAt: addDays(new Date(), 30).getTime()
     }
     console.log('creating...', listing)
-    const [err] = await mongo.addListing(listing)
-    if (err) throw err
+    await mongo.listings.add(listing)
   }
 
   connection.close()

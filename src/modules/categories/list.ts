@@ -20,8 +20,7 @@ interface Response {
 
 async function listCategories({ services }: Props<Args, Services>): Promise<Response> {
   const { mongo } = services
-  const [err, categories] = await mongo.listCategories()
-  if (err) throw err
+  const categories = await mongo.categories.list()
   return {
     categories: categories.map(mappers.CategoryView.toView)
   }

@@ -23,8 +23,7 @@ type Response = void
 async function removeSponsor({ args, services }: Props<Args, Services>): Promise<Response> {
   const { mongo } = services
   const { sponsorId } = args
-  const [err] = await mongo.deleteSponsor(sponsorId)
-  if (err) throw err
+  await mongo.sponsors.delete(sponsorId)
 }
 
 export default _.compose(

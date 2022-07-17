@@ -28,10 +28,10 @@ async function updateSponsor({ args, services }: Props<Args, Services>): Promise
   const { mongo } = services
   const categories = await (async () => {
     if (!args.categoryIds) return
-    const [aerr, allCategories] = await mongo.listCategories()
+    const allCategories = await mongo.categories.list()
     return allCategories.filter(c => args.categoryIds.includes(c.id))
   })()
-  const [serr, sponsor] = await mongo.findSponsor(args.id)
+  const sponsor = await mongo.sponsors.find(args.id)
   const patch: Partial<Omit<t.Sponsor, 'id'>>  = {
     ...sponsor,
     name: args.name ?? sponsor.name,
@@ -39,11 +39,7 @@ async function updateSponsor({ args, services }: Props<Args, Services>): Promise
     tier: args.tier ?? sponsor.tier,
     categories: categories ?? sponsor.categories
   }
-  const [err] = await mongo.updateSponsor({ 
-    id: args.id, 
-    patch
-  })
-  if (err) throw err
+  await mongo.sponsors.update(args.id, patch)
 }
 
 export default _.compose(

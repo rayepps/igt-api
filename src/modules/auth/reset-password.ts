@@ -26,7 +26,7 @@ type Response = void
 async function resetPassword({ services, args }: Props<Args, Services>): Promise<Response> {
   const { mongo } = services
   const { email } = args
-  const [err, user] = await mongo.findUserByEmail({ email })
+  const [err, user] = await _.try(mongo.users.findByEmail)(email)
   if (err) {
     throw errors.unknown({
       details: 'Error while searching for user',

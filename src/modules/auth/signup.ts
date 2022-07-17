@@ -36,7 +36,7 @@ async function signupWithEmailPass({ services, args }: Props<Args, Services>): P
   const { mongo, geo } = services
 
   // Lookup user with email
-  const [lerr, existing] = await mongo.findUserByEmail({ email: args.email })
+  const [lerr, existing] = await _.try(mongo.users.findByEmail)(args.email)
   if (lerr) {
     console.error(lerr)
     throw errors.unknown({
@@ -60,16 +60,17 @@ async function signupWithEmailPass({ services, args }: Props<Args, Services>): P
     })
   }
 
-  const [geoerr, location] = args.cityState ? await geo.lookupCityState(args.cityState) : await geo.lookupZip(args.zip)
+  const [geoerr, location] = !!args.zip
+    ? await _.try(geo.lookupZip)(args.zip)
+    : await _.try(geo.lookupCityState)(args.cityState)
+
   if (geoerr) {
     console.error(geoerr)
     throw errors.badRequest({
-      details: `Could not find location using ${args.cityState ? args.cityState : args.zip}`,
+      details: `Could not find location using ${args.cityState || args.zip}`,
       key: 'igt.err.auth.signup.no-location'
     })
   }
-
-  console.log({ location, address: args.cityState })
 
   const user: t.User = {
     id: model.id('user'),
@@ -87,7 +88,7 @@ async function signupWithEmailPass({ services, args }: Props<Args, Services>): P
     _aspRecordId: null
   }
 
-  const [err] = await mongo.addUser(user)
+  const [err] = await _.try(mongo.users.add)(user)
   if (err) {
     console.error(err)
     throw errors.unknown({

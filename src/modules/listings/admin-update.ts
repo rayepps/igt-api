@@ -36,7 +36,7 @@ interface Response {
 async function overrideListing({ args, auth, services }: Props<Args, Services, TokenAuth>): Promise<Response> {
   const { mongo } = services
 
-  const [lerr, listing] = await mongo.findListingById(args.id)
+  const listing = await mongo.listings.find(args.id)
 
   if (!listing) {
     throw errors.notFound({
@@ -46,7 +46,7 @@ async function overrideListing({ args, auth, services }: Props<Args, Services, T
   }
 
   // Lookup the user and category
-  const [cerr, category] = await mongo.findCategory(args.categoryId)
+  const category = await mongo.categories.find(args.categoryId)
 
   const newListing: t.Listing = {
     ...listing,
@@ -69,17 +69,13 @@ async function overrideListing({ args, auth, services }: Props<Args, Services, T
     return { ...acc, [key]: newValue }
   }, {} as Partial<t.Listing>)
 
-  const [err] = await mongo.updateListing({
-    id: args.id,
-    patch: _.shake({
-      ...diffPatch,
-      id: undefined,
-      user: undefined,
-      userId: undefined,
-      createdAt: undefined
-    }) as Omit<t.Listing, 'id' | 'createdAt' | 'user' | 'userId'>
-  })
-  if (err) throw err
+  await mongo.listings.update(args.id, _.shake({
+    ...diffPatch,
+    id: undefined,
+    user: undefined,
+    userId: undefined,
+    createdAt: undefined
+  }) as Omit<t.Listing, 'id' | 'createdAt' | 'user' | 'userId'>)
 
   return {
     listing: mappers.ListingView.toView(newListing)

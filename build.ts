@@ -3,35 +3,27 @@ import webpack from 'webpack'
 import TerserPlugin from 'terser-webpack-plugin'
 import { getFunctionMap } from '@exobase/local'
 import cmd from 'cmdish'
+import bluebird from 'bluebird'
 
 interface Func {
   module: string
   function: string
 }
 
-const whitelist = [
-  // 'enrichEventOnChange'
-]
-
-const functions = getFunctionMap(__dirname)
-cmd('rm -rf ./build')
-
-for (const func of whitelist.length > 0 ? functions.filter(f => whitelist.includes(f.function)) : functions) {
-  build(func).catch(err => {
-    console.error(err)
+const build = async () => {
+  cmd('rm -rf ./build')
+  const functions = getFunctionMap({
+    moduleDirectoryPath: path.join(__dirname, 'src', 'modules')
   })
+  bluebird.map(functions, async (func) => {
+    console.log(`building ${func.module}/${func.function}`)
+    await compile(func)
+    console.log(`done ${func.module}/${func.function}`)
+  }, { concurrency: 5 })
 }
 
-async function build(func: Func) {
-  console.log(`processing: ${func.module}/${func.function}.js`)
-  await compile(func)
-  console.log(`compiled: ${func.module}/${func.function}.js`)
-  await zip(func)
-  console.log(`zipped: ${func.module}/${func.function}.js -> ${func.module}/${func.function}.zip`)
-}
-
-function compile(func: Func) {
-  return new Promise<void>((res, rej) => {
+const compile = async (func: Func) => {
+  return await new Promise<void>((res, rej) => {
     webpack(
       {
         entry: [`./src/modules/${func.module}/${func.function}.ts`],
@@ -65,11 +57,10 @@ function compile(func: Func) {
         }
       },
       (err, stats) => {
-        if (err || stats.hasErrors()) {
+        if (err || stats?.hasErrors()) {
           console.log(stats)
           rej(err)
-        }
-        else res()
+        } else res()
       }
     )
   }).catch(err => {
@@ -78,8 +69,7 @@ function compile(func: Func) {
   })
 }
 
-function zip(func: Func) {
-  return cmd(`zip -q ${func.function}.zip ${func.function}.js`, {
-    cwd: path.resolve(__dirname, 'build', 'modules', func.module)
-  })
-}
+build().catch(err => {
+  console.error(err)
+  process.exit(1)
+})

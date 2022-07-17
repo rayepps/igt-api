@@ -1,15 +1,13 @@
 import _ from 'radash'
 import * as t from '../../core/types'
-import type { Props } from '@exobase/core'
+import { errors, Props } from '@exobase/core'
 import { useLogger } from '../../core/hooks/useLogger'
 import { useJsonArgs, useService } from '@exobase/hooks'
 import { useCors } from '../../core/hooks/useCors'
 import { useLambda } from '@exobase/lambda'
 import makeMongo, { MongoClient } from '../../core/mongo'
-import { usePermissionAuthorization } from '@exobase/auth/dist/permission'
-import { useTokenAuthentication } from '../../core/hooks/useTokenAuthentication'
-import { permissions } from '../../core/auth'
 import { TokenAuth } from '@exobase/auth'
+import mappers from '../../core/view/mappers'
 
 interface Args {
   id: t.Id<'listing'>
@@ -19,26 +17,33 @@ interface Services {
   mongo: MongoClient
 }
 
-type Response = void
+type Response = {
+  listing: t.ListingView
+}
 
-async function adminDeleteListing({ args, services }: Props<Args, Services, TokenAuth>): Promise<Response> {
+async function findListingById({ args, services, auth }: Props<Args, Services, TokenAuth>): Promise<Response> {
   const { mongo } = services
-  await mongo.listings.delete(args.id)
+  const listing = await mongo.listings.find(args.id)
+  if (!listing) {
+    throw errors.notFound({
+      details: `Listing with id(${args.id}) not found`,
+      key: 'igt.err.listings.find-by-id.not-found'
+    })
+  }
+  return {
+    listing: mappers.ListingView.toView(listing)
+  }
 }
 
 export default _.compose(
   useLogger(),
   useLambda(),
   useCors(),
-  useTokenAuthentication(),
-  usePermissionAuthorization({
-    require: [permissions.listing.delete.any]
-  }),
   useJsonArgs<Args>(yup => ({
     id: yup.string().required()
   })),
   useService<Services>({
     mongo: makeMongo()
   }),
-  adminDeleteListing
+  findListingById
 )
